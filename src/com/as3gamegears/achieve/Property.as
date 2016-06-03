@@ -15,13 +15,13 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-package com.as3gamegears.achieve 
-{
+package com.as3gamegears.achieve;
+
 	/**
 	 * Describes a property used to measure an achievement progress. A property is pretty much a counter
 	 * with some special attributes (such as default value and update constraints).
 	 */
-	public class Property 
+	class Property 
 	{
 		private var mName 				:String;
 		private var mValue 				:int;
@@ -30,7 +30,7 @@ package com.as3gamegears.achieve
 		private var mInitialValue 		:int;
 		private var mTags				:Array;
 		
-		public function Property(theName :String, theInitialValue :int, theActivation :String, theActivationValue :int, theTags :Array = null) {
+		public function new(theName :String, theInitialValue :int, theActivation :String, theActivationValue :int, theTags :Array = null) {
 			mName 				= theName;
 			mActivation 		= theActivation;
 			mActivationValue 	= theActivationValue;
