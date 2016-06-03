@@ -15,28 +15,43 @@
  * CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-package com.as3gamegears.achieve 
-{		
-	public class Achievement 
+package;
+
+import flash.display.Sprite;
+import flash.events.Event;
+import flash.events.MouseEvent;
+
+class Main extends Sprite 
+{
+	private var game:Game = new Game();
+	
+	public function new() 
 	{
-		private var mName 		:String;
-		private var mProps 		:Array;	
-		private var mUnlocked	:Boolean;	
+		super();
 		
-		public function Achievement(theId :String, theRelatedProps :Array) {
-			mName 		= theId;
-			mProps 		= theRelatedProps;
-			mUnlocked 	= false;
-		}
+		if (stage != null) init();
+		else addEventListener(Event.ADDED_TO_STAGE, init);
+	}
+	
+	private function init(e:Event = null):Void 
+	{
+		removeEventListener(Event.ADDED_TO_STAGE, init);
 		
-		public function toString() :String {
-			return "[Achivement " + mName + "]";
-		}
+		stage.addEventListener(Event.ENTER_FRAME, enterFrame);
+		stage.addEventListener(MouseEvent.MOUSE_MOVE, mouseMove);
+		stage.frameRate = 30;
 		
-		public function set unlocked(v :Boolean) :void { mUnlocked = v; }
-		
-		public function get unlocked() 	:Boolean { return mUnlocked; }
-		public function get props() 	:Array 	 { return mProps; }
-		public function get name() 		:String  { return mName; }
+		addChild(game);
+	}
+	
+	private function mouseMove(e:MouseEvent):Void 
+	{
+		Game.MOUSE.x = e.stageX;
+		Game.MOUSE.y = e.stageY;
+	}
+	
+	private function enterFrame(e:Event):Void 
+	{
+		game.update();
 	}
 }
