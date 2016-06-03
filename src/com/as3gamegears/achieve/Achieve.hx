@@ -16,8 +16,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 package com.as3gamegears.achieve;
+
 import haxe.ds.StringMap;
-import lime.graphics.cairo.CairoImageSurface;
 
 // TODO: documentation
 // TODO: convert sample project
@@ -29,7 +29,7 @@ class Achieve
 	
 	public var numAchievements(default, null):Int;
 	public var numUnlockedAchievements(get, null):Int;
-	public var numLockedAchievemtns(get, null):Int;
+	public var numLockedAchievements(get, null):Int;
 	
 	private var mProps 			:StringMap<Property>;
 	private var mAchievements 	:StringMap<Achievement>;
@@ -214,6 +214,32 @@ class Achieve
 		return result;
 	}
 	
+	public function getAllUnlockedAchievements(?achievements:Array<Achievement>):Array<Achievement>
+	{
+		for (achievement in mAchievements) 
+		{
+			if (achievement.unlocked) 
+			{
+				achievements = (achievements != null) ? achievements : new Array<Achievement>();
+				achievements.push(achievement);
+			}
+		}
+		
+		return achievements;
+	}
+	
+	public function getAllAchievements(?achievements:Array<Achievement>):Array<Achievement>
+	{
+		achievements = (achievements != null) ? achievements : new Array<Achievement>();
+		
+		for (achievement in mAchievements) 
+		{
+			achievements.push(achievement);
+		}
+		
+		return achievements;
+	}
+	
 	public function achievementUnlocked(theName:String):Bool
 	{
 		if (checkAchievementExists(theName))
@@ -277,7 +303,7 @@ class Achieve
 		return result;
 	}
 	
-	private function get_numLockedAchievemtns():Int
+	private function get_numLockedAchievements():Int
 	{
 		return numAchievements - numUnlockedAchievements;
 	}

@@ -24,6 +24,8 @@ class Achievement
 	public var unlocked(get, set):Bool;
 	public var progress(get, null):Float;
 	
+	public var data:Dynamic;
+	
 	private var mUnlocked:Bool;
 	
 	public function new(theId:String, theRelatedProps:Array<Property>)
