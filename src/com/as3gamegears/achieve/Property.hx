@@ -16,6 +16,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 package com.as3gamegears.achieve;
+
 import com.as3gamegears.achieve.Achieve.PROPERTY_ACTIVATION;
 
 /**
@@ -28,15 +29,20 @@ class Property
 	public var name(default, null):String;
 	public var tags(default, null):Array<String>;
 	public var activation(default, null):PROPERTY_ACTIVATION;
-	public var active(get, null):Bool;
+	public var finished(default, null):Bool = false;
 	public var progress(get, null):Float;
+	public var absProgress(get, null):Int;
 	public var range(get, null):Int;
+	
+	public var data:Dynamic;
 	
 	private var mActivationValue:Int;
 	private var mInitialValue:Int;
 	private var mValue:Int;
 	
-	public function new(theName:String, theInitialValue:Int, theActivation:PROPERTY_ACTIVATION, theActivationValue:Int, ?theTags:Array<String>)
+	private var listeners:Array<Achievement> = [];
+	
+	public function new(theName:String, theInitialValue:Int = 0, theActivation:PROPERTY_ACTIVATION = PROPERTY_ACTIVATION.ACTIVE_IF_GREATER_THAN, theActivationValue:Int = 99, ?theTags:Array<String>)
 	{
 		name 				= theName;
 		tags 				= theTags;
@@ -53,7 +59,7 @@ class Property
 	
 	public function hasTag(theTag:String):Bool
 	{
-		if (tags != null && tags.indexOf(theTag) != -1)
+		if (tags != null && tags.indexOf(theTag) >= 0)
 		{
 			return true;
 		}
@@ -65,7 +71,7 @@ class Property
 	{
 		for (i in 0...theTags.length)
 		{
-			if (tags != null && tags.indexOf(theTags[i]) != -1)
+			if (tags != null && tags.indexOf(theTags[i]) >= 0)
 			{
 				return true;
 			}
@@ -85,7 +91,7 @@ class Property
 		{
 			for (i in 0...theTags.length)
 			{
-				if (tags.indexOf(theTags[i]) == -1)
+				if (tags.indexOf(theTags[i]) < 0)
 				{
 					return false;
 				}
@@ -95,9 +101,33 @@ class Property
 		return true;
 	}
 	
+	// TODO: use this method...
+	@:allow(com.as3gamegears.achieve.Achievement)
+	private function addAchievementListener(achievement:Achievement):Void
+	{
+		if (listeners.indexOf(achievement) < 0)
+		{
+			listeners.push(achievement);
+		}
+	}
+	
+	// TODO: use this method...
+	@:allow(com.as3gamegears.achieve.Achievement)
+	private function removeAchievementListener(achievement:Achievement):Void
+	{
+		listeners.remove(achievement);
+	}
+	
 	private function get_progress():Float
 	{
-		return Math.abs((mValue - mInitialValue) / (mActivationValue - mInitialValue));
+		return absProgress / range;
+	}
+	
+	private function get_absProgress():Int
+	{
+		var abs:Float = Math.abs(mValue - mInitialValue);
+		abs = Math.min(range, absProgress);
+		return Std.int(abs);
 	}
 	
 	private function get_range():Int
@@ -112,19 +142,38 @@ class Property
 	
 	private function set_value(v:Int):Int
 	{
-		return mValue = v;
-	}
-	
-	private function get_active():Bool
-	{
-		var aRet:Bool = false;
+		var oldFinished:Bool = finished;
+		var processProgress:Bool = !finished;
+		var oldValue:Int = mValue;
+		mValue = v;
 		
-		switch (activation) 
+		Achieve.processPropertyChange(this, (mValue - oldValue));
+		
+		var newFinished:Bool = switch (activation) 
 		{
-			case PROPERTY_ACTIVATION.ACTIVE_IF_GREATER_THAN: 	aRet = (value > mActivationValue);
-			case PROPERTY_ACTIVATION.ACTIVE_IF_LESS_THAN: 		aRet = (value < mActivationValue);
+			case PROPERTY_ACTIVATION.ACTIVE_IF_GREATER_THAN: 	(value >= mActivationValue); // (value > mActivationValue);
+			case PROPERTY_ACTIVATION.ACTIVE_IF_LESS_THAN: 		(value <= mActivationValue); // (value < mActivationValue);
+		};
+		
+		if (processProgress)
+		{
+			for (a in listeners)
+			{
+				a.onPropertyProgress(this);
+			}
 		}
 		
-		return aRet;
+		if (newFinished && oldFinished != newFinished)
+		{
+			finished = true;
+			Achieve.processPropertyFinish(this);
+			
+			for (a in listeners)
+			{
+				a.onPropertyFinish(this);
+			}
+		}
+		
+		return  v;
 	}
 }

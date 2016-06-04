@@ -19,28 +19,40 @@ package com.as3gamegears.achieve;
 
 import haxe.ds.StringMap;
 
-// TODO: documentation
-// TODO: convert sample project
-	
+// TODO: documentation...
+// TODO: see other todos...
+
 class Achieve 
 {
-	public var numProperties(default, null):Int;
-	public var numActiveProperties(get, null):Int;
+	public static var numProperties(default, null):Int;
+	public static var numFinishedProperties(get, null):Int;
 	
-	public var numAchievements(default, null):Int;
-	public var numUnlockedAchievements(get, null):Int;
-	public var numLockedAchievements(get, null):Int;
+	public static var numAchievements(default, null):Int;
+	public static var numUnlockedAchievements(get, null):Int;
+	public static var numLockedAchievements(get, null):Int;
 	
-	private var mProps 			:StringMap<Property>;
-	private var mAchievements 	:StringMap<Achievement>;
+	/**
+	 * Property name -> Property value -> Property progress -> Property range -> Void
+	 */
+	public static var onPropertyProgress		:String->Int->Void;
+	/**
+	 * Achievement name -> Achievement value delta -> Void
+	 */
+	public static var onAchievementProgress		:String->Int->Void;
 	
-	public function new()
-	{
-		mProps 			= new StringMap<Property>();
-		mAchievements 	= new StringMap<Achievement>();
-	}
+	public static var onPropertyFull			:String->Void;
 	
-	public function registerProperty(theName:String, theInitialValue:Int, theaActivationMode:PROPERTY_ACTIVATION, theValue:Int, ?theTags:Array<String>):Property
+	public static var onAchievementUnlock		:String->Void;
+	
+	private static var mProps 					:StringMap<Property> = new StringMap<Property>();
+	private static var mAchievements 			:StringMap<Achievement> = new StringMap<Achievement>();
+	
+	/**
+	 * Helper array for achievement management
+	 */
+	private static var mAchievementsArray		:Array<Achievement> = [];
+	
+	public static function registerProperty(theName:String, theInitialValue:Int, theaActivationMode:PROPERTY_ACTIVATION, theValue:Int, ?theTags:Array<String>):Property
 	{
 		if (containsProperty(theName))
 		{
@@ -52,7 +64,7 @@ class Achieve
 		return mProps.get(theName);
 	}
 	
-	public function unregisterProperty(theName:String):Property
+	public static function unregisterProperty(theName:String):Property
 	{
 		if (containsProperty(theName))
 		{
@@ -73,7 +85,7 @@ class Achieve
 		return null;
 	}
 	
-	public function registerAchievement(theName:String, theRelatedProps:Array<String>):Achievement
+	public static function registerAchievement(theName:String, theRelatedProps:Array<String>):Achievement
 	{
 		if (checkAchievementExists(theName))
 		{
@@ -86,18 +98,12 @@ class Achieve
 			checkPropertyExist(theRelatedProps[i]);
 		}
 		
-		var props:Array<Property> = [];
-		for (i in 0...numProps)
-		{
-			props.push(mProps.get(theRelatedProps[i]));
-		} 
-		
-		mAchievements.set(theName, new Achievement(theName, props));
+		mAchievements.set(theName, new Achievement(theName, theRelatedProps));
 		numAchievements++;
 		return mAchievements.get(theName);
 	}
 	
-	public function unregisterAchievement(theName:String):Achievement
+	public static function unregisterAchievement(theName:String):Achievement
 	{
 		if (checkAchievementExists(theName))
 		{
@@ -110,13 +116,14 @@ class Achieve
 		return null;
 	}
 	
-	public function getProperty(theProp:String):Int 
+	public static function getProperty(theProp:String):Int 
 	{
 		checkPropertyExist(theProp);
 		return mProps.get(theProp).value;
 	}
 	
-	public function addToProperty(theProp:ArrayOrString, theValue:Int):Void
+	// TODO: split this method into two: addToProperty and addToProperties
+	public static function addToProperty(theProp:ArrayOrString, theValue:Int):Void
 	{
 		if (Std.is(theProp, Array))
 		{
@@ -133,7 +140,8 @@ class Achieve
 		}
 	}
 	
-	public function setProperty(theProp:ArrayOrString, theValue:Int, theIgnoreActivationContraint:Bool = false):Void
+	// TODO: split this method into two: addToProperty and addToProperties
+	public static function setProperty(theProp:ArrayOrString, theValue:Int, theIgnoreActivationContraint:Bool = false):Void
 	{
 		if (Std.is(theProp, Array))
 		{
@@ -151,7 +159,14 @@ class Achieve
 		}
 	}
 	
-	private function doSetValue(theProp:String, theValue:Int, theIgnoreActivationContraint:Bool = false):Void
+	public static function property(theProp:String):Property
+	{
+		checkPropertyExist(theProp);
+		return mProps.get(theProp);
+	}
+	
+	// TODO: split this method into two: addToProperty and addToProperties
+	private static function doSetValue(theProp:String, theValue:Int, theIgnoreActivationContraint:Bool = false):Void
 	{
 		checkPropertyExist(theProp);
 		
@@ -164,10 +179,11 @@ class Achieve
 			}
 		}
 		
-		mProps.get(theProp).value = theValue;
+		var prop:Property = mProps.get(theProp);
+		prop.value = theValue;
 	}
 	
-	public function resetProperties(?theTags:Array<String>):Void
+	public static function resetProperties(?theTags:Array<String>):Void
 	{
 		for (prop in mProps)
 		{
@@ -178,12 +194,22 @@ class Achieve
 		}
 	}
 	
-	public function containsProperty(theName:String):Bool
+	public static function reset():Void
+	{
+		resetProperties();
+		
+		for (a in mAchievements)
+		{
+			a.reset();
+		}
+	}
+	
+	public static function containsProperty(theName:String):Bool
 	{
 		return mProps.exists(theName);
 	}
 	
-	private inline function checkPropertyExist(theName:String):Void
+	private static inline function checkPropertyExist(theName:String):Void
 	{
 		if (!containsProperty(theName))
 		{
@@ -191,44 +217,12 @@ class Achieve
 		}
 	}
 	
-	public function checkAchievementExists(theName:String):Bool
+	public static function checkAchievementExists(theName:String):Bool
 	{
 		return mAchievements.exists(theName);
 	}
 	
-	public function checkAchievements(?theTags:Array<String>, ?result:Array<Achievement>):Array<Achievement>
-	{
-		for (achievement in mAchievements) 
-		{
-			if (achievement.unlocked == false) 
-			{
-				var aActiveProps:Int = 0;
-				var numProps:Int = achievement.props.length;
-				
-				for (p in 0...numProps)
-				{
-					var aProp:Property = mProps.get(achievement.props[p].name);
-					
-					if ((theTags == null || aProp.hasAnyTag(theTags)) && aProp.active)
-					{
-						aActiveProps++;
-					}
-				}
-				
-				if (aActiveProps == achievement.props.length)
-				{
-					achievement.unlocked = true;
-					
-					result = (result != null) ? result : new Array<Achievement>();
-					result.push(achievement);
-				}
-			}
-		}
-		
-		return result;
-	}
-	
-	public function getAllUnlockedAchievements(?achievements:Array<Achievement>):Array<Achievement>
+	public static function getAllUnlockedAchievements(?achievements:Array<Achievement>):Array<Achievement>
 	{
 		for (achievement in mAchievements) 
 		{
@@ -242,7 +236,7 @@ class Achieve
 		return achievements;
 	}
 	
-	public function getAllAchievements(?achievements:Array<Achievement>):Array<Achievement>
+	public static function getAllAchievements(?achievements:Array<Achievement>):Array<Achievement>
 	{
 		achievements = (achievements != null) ? achievements : new Array<Achievement>();
 		
@@ -254,7 +248,7 @@ class Achieve
 		return achievements;
 	}
 	
-	public function achievementUnlocked(theName:String):Bool
+	public static function achievementUnlocked(theName:String):Bool
 	{
 		if (checkAchievementExists(theName))
 		{
@@ -265,7 +259,7 @@ class Achieve
 		return false;
 	}
 	
-	public function getAchievement(theName:String):Achievement
+	public static function achievement(theName:String):Achievement
 	{
 		if (checkAchievementExists(theName))
 		{
@@ -276,7 +270,8 @@ class Achieve
 		return null;
 	}
 	
-	public function getAchievementsWith(theProp:ArrayOrString, ?achievements:Array<Achievement>):Array<Achievement>
+	// TODO convert `theProp` to array
+	public static function getAchievementsWith(theProp:ArrayOrString, ?achievements:Array<Achievement>):Array<Achievement>
 	{
 		achievements = (achievements != null) ? achievements : new Array<Achievement>();
 		
@@ -305,7 +300,7 @@ class Achieve
 		return achievements;
 	}
 	
-	public function getAchievementsBy(?theTags:Array<String>, ?achievements:Array<Achievement>):Array<Achievement>
+	public static function getAchievementsBy(?theTags:Array<String>, ?achievements:Array<Achievement>):Array<Achievement>
 	{
 		achievements = (achievements != null) ? achievements : new Array<Achievement>();
 		var propNames:Array<String> = [];
@@ -321,7 +316,7 @@ class Achieve
 		return getAchievementsWith(propNames, achievements);
 	}
 	
-	public function dumpProperties():String
+	public static function dumpProperties():String
 	{
 		var aRet:String = "";
 		
@@ -332,13 +327,49 @@ class Achieve
 		return aRet.substr(0, aRet.length - 2);
 	}
 	
-	private function get_numActiveProperties():Int
+	@:allow(com.as3gamegears.achieve.Achievement)
+	private static function processAchievementProgress(theAchievement:Achievement, deltaValue:Int):Void
+	{
+		if (onAchievementProgress != null)
+		{
+			onAchievementProgress(theAchievement.name, deltaValue);
+		}
+	}
+	
+	@:allow(com.as3gamegears.achieve.Achievement)
+	private static function processAchievementUnlock(theAchievement:Achievement):Void
+	{
+		if (onAchievementUnlock != null)
+		{
+			onAchievementUnlock(theAchievement.name);
+		}
+	}
+	
+	@:allow(com.as3gamegears.achieve.Property)
+	private static function processPropertyChange(theProp:Property, deltaValue:Int):Void
+	{
+		if (onPropertyProgress != null)
+		{
+			onPropertyProgress(theProp.name, deltaValue);
+		}
+	}
+	
+	@:allow(com.as3gamegears.achieve.Property)
+	private static function processPropertyFinish(theProp:Property):Void
+	{
+		if (onPropertyFull != null)
+		{
+			onPropertyFull(theProp.name);
+		}
+	}
+	
+	private static function get_numFinishedProperties():Int
 	{
 		var result:Int = 0;
 		
 		for (p in mProps)
 		{
-			if (p.active)
+			if (p.finished)
 			{
 				result++;
 			}
@@ -347,7 +378,7 @@ class Achieve
 		return result;
 	}
 	
-	private function get_numUnlockedAchievements():Int
+	private static function get_numUnlockedAchievements():Int
 	{
 		var result:Int = 0;
 		
@@ -362,7 +393,7 @@ class Achieve
 		return result;
 	}
 	
-	private function get_numLockedAchievements():Int
+	private static function get_numLockedAchievements():Int
 	{
 		return numAchievements - numUnlockedAchievements;
 	}

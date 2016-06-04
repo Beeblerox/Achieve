@@ -20,44 +20,68 @@ package com.as3gamegears.achieve;
 class Achievement 
 {
 	public var name(default, null):String;
-	public var props(default, null):Array<Property>;	
-	public var unlocked(get, set):Bool;
-	public var progress(get, null):Float;
+	public var props(default, null):Array<String>;	
+	public var unlocked(default, null):Bool = false;
+	public var progress(default, null):Float = 0;
+	public var range(default, null):Int = 0;
+	public var absProgress(default, null):Int = 0;
 	
 	public var data:Dynamic;
 	
-	private var mUnlocked:Bool;
-	
-	public function new(theId:String, theRelatedProps:Array<Property>)
+	public function new(theId:String, theRelatedProps:Array<String>)
 	{
-		name 		= theId;
-		props 		= theRelatedProps;
-		mUnlocked 	= false;
+		name = theId;
+		props = theRelatedProps;
+		
+		calculateDerivativeValues();
+		subscribe();
+	}
+	
+	private function calculateDerivativeValues():Void
+	{
+		var rangeMultProgress:Float = 0;
+		absProgress = 0;
+		range = 0;
+		
+		for (propName in props)
+		{
+			var property:Property = Achieve.property(propName);
+			var propRange:Int = property.range;
+			var propProgress:Float = property.progress;
+			rangeMultProgress += propRange * propProgress;
+			absProgress += property.absProgress;
+			range += propRange;
+		}
+		
+		progress = rangeMultProgress / range;
+	}
+	
+	public function reset():Void
+	{
+		unlocked = false;
+	}
+	
+	private function subscribe():Void
+	{
+		for (propName in props)
+		{
+			var prop:Property = Achieve.property(propName);
+			prop.addAchievementListener(this);
+		}
 	}
 	
 	public function hasProperty(theName:String):Bool
 	{
-		for (prop in props)
-		{
-			if (prop.name == theName)
-			{
-				return true;
-			}
-		}
-		
-		return false;
+		return (props.indexOf(theName) != -1);
 	}
 	
 	public function hasAnyProperty(theNames:Array<String>):Bool
 	{
 		for (propName in theNames)
 		{
-			for (prop in props)
+			if (hasProperty(propName))
 			{
-				if (prop.name == propName)
-				{
-					return true;
-				}
+				return true;
 			}
 		}
 		
@@ -68,17 +92,7 @@ class Achievement
 	{
 		for (propName in theNames)
 		{
-			var hasProp:Bool = false;
-			
-			for (prop in props)
-			{
-				if (prop.name == propName)
-				{
-					hasProp = true;
-				}
-			}
-			
-			if (!hasProp)
+			if (!hasProperty(propName))
 			{
 				return false;
 			}
@@ -87,38 +101,42 @@ class Achievement
 		return true;
 	}
 	
-	public function get_progress():Float
+	@:allow(com.as3gamegears.achieve.Property)
+	private function onPropertyProgress(theProp:Property):Void
 	{
-		var propRange:Int;
-		var propProgress:Float;
+		var oldAbsProgress:Int = absProgress;
+		calculateDerivativeValues();
 		
-		var rangeSum:Int = 0;
-		var rangeMultProgress:Float = 0;
-		
-		for (prop in props)
+		if (absProgress != oldAbsProgress)
 		{
-			propRange = prop.range;
-			propProgress = prop.progress;
-			
-			rangeSum += propRange;
-			rangeMultProgress += propRange * propProgress;
+			Achieve.processAchievementProgress(this, (absProgress - oldAbsProgress));
+		}
+	}
+	
+	@:allow(com.as3gamegears.achieve.Property)
+	private function onPropertyFinish(theProp:Property):Void
+	{
+		// check if it's unlocked already
+		if (unlocked)
+		{
+			return;
 		}
 		
-		return rangeMultProgress / rangeSum;
+		// check if all its properties are finished
+		for (propName in props)
+		{
+			if (!Achieve.property(propName).finished)
+			{
+				return;
+			}
+		}
+		
+		unlocked = true;
+		Achieve.processAchievementUnlock(this);
 	}
 	
 	public function toString():String
 	{
 		return "[Achivement " + name + "]";
-	}
-	
-	private function get_unlocked():Bool
-	{
-		return mUnlocked;
-	}
-	
-	private function set_unlocked(v:Bool):Bool
-	{
-		return mUnlocked = v;
 	}
 }

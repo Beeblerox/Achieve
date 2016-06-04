@@ -34,7 +34,6 @@ class Game extends Sprite
 	public static var HEIGHT 		:Float = 0;
 	public static var INSTANCE 		:Game;
 	
-	public var achieve	 			:Achieve;
 	public var logs	 				:TextField;
 	public var hud	 				:Sprite;
 	public var boids 				:Array<Boid> = new Array<Boid>();
@@ -52,7 +51,6 @@ class Game extends Sprite
 		Game.INSTANCE 			= this;
 		Game.WIDTH 				= stage.stageWidth;
 		Game.HEIGHT 			= stage.stageHeight;
-		Game.INSTANCE.achieve	= new Achieve();
 		
 		stage.addEventListener(MouseEvent.CLICK, onClick);
 		stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
@@ -79,48 +77,40 @@ class Game extends Sprite
 		logs.alpha				= 0.7;
 		addChild(logs);
 		
-		Game.INSTANCE.achieve.registerProperty("kills", 0, PROPERTY_ACTIVATION.ACTIVE_IF_GREATER_THAN, 5, ["partial"]);
-		Game.INSTANCE.achieve.registerProperty("criticalDamages", 0, PROPERTY_ACTIVATION.ACTIVE_IF_GREATER_THAN, 6, ["partial"]);
-		Game.INSTANCE.achieve.registerProperty("deaths", 10, PROPERTY_ACTIVATION.ACTIVE_IF_LESS_THAN, 2);
+		Achieve.registerProperty("kills", 0, PROPERTY_ACTIVATION.ACTIVE_IF_GREATER_THAN, 5, ["partial"]);
+		Achieve.registerProperty("criticalDamages", 0, PROPERTY_ACTIVATION.ACTIVE_IF_GREATER_THAN, 6, ["partial"]);
+		Achieve.registerProperty("deaths", 10, PROPERTY_ACTIVATION.ACTIVE_IF_LESS_THAN, 2);
 		
-		Game.INSTANCE.achieve.registerAchievement("killer", ["kills"]);
-		Game.INSTANCE.achieve.registerAchievement("last", ["deaths"]);
-		Game.INSTANCE.achieve.registerAchievement("hero", ["kills", "criticalDamages", "deaths"]);
+		Achieve.registerAchievement("killer", ["kills"]);
+		Achieve.registerAchievement("last", ["deaths"]);
+		Achieve.registerAchievement("hero", ["kills", "criticalDamages", "deaths"]);
+		
+		Achieve.onAchievementUnlock = updateHudAchivements;
 	}
 	
-	private function updateHudAchivements(theNewAchievements:Array<Achievement>):Void 
+	private function updateHudAchivements(theAchievement:String):Void 
 	{
-		if (theNewAchievements != null) 
+		if (theAchievement != null) 
 		{
-			for (i in 0...theNewAchievements.length) 
-			{
-				var a:Achievement = theNewAchievements[i];
-				hud.addChild(new UnlockedSign(370, 400 - hud.numChildren * (UnlockedSign.HEIGHT + 10), a.name));
-			}
+			hud.addChild(new UnlockedSign(370, 400 - hud.numChildren * (UnlockedSign.HEIGHT + 10), theAchievement));
 		}
 	}
 	
 	private function onClick(e:MouseEvent):Void 
 	{
-		Game.INSTANCE.achieve.addToProperty(["kills", "criticalDamages"], 1);
-		Game.INSTANCE.achieve.addToProperty("deaths", -1);
+		Achieve.addToProperty(["kills", "criticalDamages"], 1);
+		Achieve.addToProperty("deaths", -1);
 		
-		logs.text = "Props: " + Game.INSTANCE.achieve.dumpProperties() + "\n";
-		updateHudAchivements(Game.INSTANCE.achieve.checkAchievements(["partial"]));
+		logs.text = "Props: " + Achieve.dumpProperties() + "\n";
 	}
 	
 	private function onKeyDown(e:KeyboardEvent):Void 
 	{
-		if (e.keyCode == Keyboard.C) 
-		{
-			updateHudAchivements(Game.INSTANCE.achieve.checkAchievements());
-		}
-		
 		if (e.keyCode == Keyboard.K) 
 		{
-			Game.INSTANCE.achieve.setProperty("kills", 1);
-			Game.INSTANCE.achieve.setProperty("deaths", 1);
-			logs.text = "OK Props: " + Game.INSTANCE.achieve.dumpProperties() + "\n";
+			Achieve.setProperty("kills", 1);
+			Achieve.setProperty("deaths", 1);
+			logs.text = "OK Props: " + Achieve.dumpProperties() + "\n";
 		}
 	}
 	
