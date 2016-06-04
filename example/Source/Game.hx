@@ -98,7 +98,7 @@ class Game extends Sprite
 	
 	private function onClick(e:MouseEvent):Void 
 	{
-		Achieve.addToProperty(["kills", "criticalDamages"], 1);
+		Achieve.addToProperties(["kills", "criticalDamages"], 1);
 		Achieve.addToProperty("deaths", -1);
 		
 		logs.text = "Props: " + Achieve.dumpProperties() + "\n";

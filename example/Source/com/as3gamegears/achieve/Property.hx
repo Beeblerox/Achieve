@@ -101,7 +101,6 @@ class Property
 		return true;
 	}
 	
-	// TODO: use this method...
 	@:allow(com.as3gamegears.achieve.Achievement)
 	private function addAchievementListener(achievement:Achievement):Void
 	{
@@ -111,7 +110,6 @@ class Property
 		}
 	}
 	
-	// TODO: use this method...
 	@:allow(com.as3gamegears.achieve.Achievement)
 	private function removeAchievementListener(achievement:Achievement):Void
 	{

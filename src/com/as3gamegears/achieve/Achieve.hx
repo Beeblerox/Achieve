@@ -20,7 +20,6 @@ package com.as3gamegears.achieve;
 import haxe.ds.StringMap;
 
 // TODO: documentation...
-// TODO: see other todos...
 
 class Achieve 
 {
@@ -122,40 +121,32 @@ class Achieve
 		return mProps.get(theProp).value;
 	}
 	
-	// TODO: split this method into two: addToProperty and addToProperties
-	public static function addToProperty(theProp:ArrayOrString, theValue:Int):Void
+	public static function addToProperty(theProp:String, theValue:Int):Void
 	{
-		if (Std.is(theProp, Array))
+		setProperty(theProp, getProperty(theProp) + theValue);
+	}
+	
+	public static function addToProperties(theProps:Array<String>, theValue:Int):Void
+	{
+		var numProps:Int = theProps.length;
+		for (i in 0...numProps)
 		{
-			var propNames:Array<String> = cast theProp;
-			var numProps:Int = propNames.length;
-			for (i in 0...numProps)
-			{
-				setProperty(propNames[i], getProperty(propNames[i]) + theValue);
-			}
-		}
-		else if (Std.is(theProp, String)) 
-		{
-			setProperty(theProp, getProperty(theProp) + theValue);
+			setProperty(theProps[i], getProperty(theProps[i]) + theValue);
 		}
 	}
 	
-	// TODO: split this method into two: addToProperty and addToProperties
-	public static function setProperty(theProp:ArrayOrString, theValue:Int, theIgnoreActivationContraint:Bool = false):Void
+	public static function setProperty(theProp:String, theValue:Int, theIgnoreActivationContraint:Bool = false):Void
 	{
-		if (Std.is(theProp, Array))
+		doSetValue(theProp, theValue, theIgnoreActivationContraint);
+	}
+	
+	public static function setProperties(theProps:Array<String>, theValue:Int, theIgnoreActivationContraint:Bool = false):Void
+	{
+		var numProps:Int = theProps.length;
+		
+		for (i in 0...numProps) 
 		{
-			var props:Array<String> = cast theProp;
-			var numProps:Int = props.length;
-			
-			for (i in 0...numProps) 
-			{
-				doSetValue(theProp[i], getProperty(props[i]) + theValue, theIgnoreActivationContraint);
-			}
-		}
-		else if (Std.is(theProp, String)) 
-		{
-			doSetValue(theProp, theValue, theIgnoreActivationContraint);
+			doSetValue(theProps[i], getProperty(theProps[i]) + theValue, theIgnoreActivationContraint);
 		}
 	}
 	
@@ -165,7 +156,6 @@ class Achieve
 		return mProps.get(theProp);
 	}
 	
-	// TODO: split this method into two: addToProperty and addToProperties
 	private static function doSetValue(theProp:String, theValue:Int, theIgnoreActivationContraint:Bool = false):Void
 	{
 		checkPropertyExist(theProp);
@@ -270,30 +260,15 @@ class Achieve
 		return null;
 	}
 	
-	// TODO convert `theProp` to array
-	public static function getAchievementsWith(theProp:ArrayOrString, ?achievements:Array<Achievement>):Array<Achievement>
+	public static function getAchievementsWith(theProps:Array<String>, ?achievements:Array<Achievement>):Array<Achievement>
 	{
 		achievements = (achievements != null) ? achievements : new Array<Achievement>();
 		
-		if (Std.is(theProp, Array))
+		for (a in mAchievements)
 		{
-			var propNames:Array<String> = cast theProp;
-			for (a in mAchievements)
+			if (a.hasAnyProperty(theProps))
 			{
-				if (a.hasAnyProperty(propNames))
-				{
-					achievements.push(a);
-				}
-			}
-		}
-		else if (Std.is(theProp, String)) 
-		{
-			for (a in mAchievements)
-			{
-				if (a.hasProperty(Std.string(theProp)))
-				{
-					achievements.push(a);
-				}
+				achievements.push(a);
 			}
 		}
 		
@@ -405,6 +380,3 @@ abstract PROPERTY_ACTIVATION(String) from String to String
 	var ACTIVE_IF_GREATER_THAN	= ">";
 	var ACTIVE_IF_LESS_THAN		= "<";
 }
-
-abstract OneOfTwo<T1, T2>(Dynamic) from T1 from T2 to T1 to T2 { }
-typedef ArrayOrString = OneOfTwo<Array<String>, String>;
