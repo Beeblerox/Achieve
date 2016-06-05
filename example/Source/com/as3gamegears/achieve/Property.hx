@@ -25,15 +25,44 @@ import com.as3gamegears.achieve.Achieve.PROPERTY_ACTIVATION;
  */
 class Property
 {
+	/**
+	 * Current value of the property
+	 */
 	public var value(get, set):Int;
+	/**
+	 * The name of the property
+	 */
 	public var name(default, null):String;
+	/**
+	 * An array of tags of this property
+	 */
 	public var tags(default, null):Array<String>;
+	/**
+	 * "Activation" mode
+	 */
 	public var activation(default, null):PROPERTY_ACTIVATION;
+	/**
+	 * Whether the property is "finished" (is there any need to keep track of its value changes).
+	 */
 	public var finished(default, null):Bool = false;
+	/**
+	 * Property value progress from 0 to 1.
+	 */
 	public var progress(get, null):Float;
+	/**
+	 * Absolute property value progress.
+	 * Say if initial value is 0 and current value is 42, then absProgress is (42 - 0)
+	 */
 	public var absProgress(get, null):Int;
+	/**
+	 * Range of values to keep track in.
+	 * Say if initial value is 20 and activation value is 100, then range is (100 - 20) = 80
+	 */
 	public var range(default, null):Int;
 	
+	/**
+	 * User data. Can hold anything.
+	 */
 	public var data:Dynamic;
 	
 	private var mActivationValue:Int;
@@ -42,7 +71,16 @@ class Property
 	
 	private var listeners:Array<Achievement> = [];
 	
-	public function new(theName:String, theInitialValue:Int = 0, theActivation:PROPERTY_ACTIVATION = PROPERTY_ACTIVATION.ACTIVE_IF_GREATER_THAN, theActivationValue:Int = 99, ?theTags:Array<String>)
+	/**
+	 * Property constructor
+	 * @param	theName				Property name
+	 * @param	theInitialValue		Initial value of property
+	 * @param	theActivation		Activation mode
+	 * @param	theActivationValue	Activation value
+	 * @param	theTags				Optional array of tags for property.
+	 */
+	@:allow(com.as3gamegears.achieve.Achieve)
+	private function new(theName:String, theInitialValue:Int = 0, theActivation:PROPERTY_ACTIVATION = PROPERTY_ACTIVATION.ACTIVE_IF_GREATER_THAN, theActivationValue:Int = 100, ?theTags:Array<String>)
 	{
 		name 				= theName;
 		tags 				= theTags;
@@ -55,12 +93,19 @@ class Property
 		reset();
 	}
 	
+	/**
+	 * Resets property to initial state.
+	 */
 	public function reset():Void 
 	{
 		mValue = mInitialValue;
 		finished = false;
 	}
 	
+	/**
+	 * Tells if the property has specified tag
+	 * @return
+	 */
 	public function hasTag(theTag:String):Bool
 	{
 		if (tags != null && tags.indexOf(theTag) >= 0)
@@ -71,6 +116,9 @@ class Property
 		return false;
 	}
 	
+	/**
+	 * Tells if the property has any of specified tags
+	 */
 	public function hasAnyTag(theTags:Array<String>):Bool
 	{
 		for (i in 0...theTags.length)
@@ -84,6 +132,9 @@ class Property
 		return false;
 	}
 	
+	/**
+	 * Tells if the property has all specified tags
+	 */
 	public function hasAllTags(theTags:Array<String>):Bool
 	{
 		if (tags == null && theTags.length > 0)

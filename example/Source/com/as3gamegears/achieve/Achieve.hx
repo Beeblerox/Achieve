@@ -19,50 +19,91 @@ package com.as3gamegears.achieve;
 
 import haxe.ds.StringMap;
 
-// TODO: documentation...
-
+/**
+ * Achievement manager class
+ */
 class Achieve 
 {
+	/**
+	 * Number of registered properties
+	 */
 	public static var numProperties(default, null):Int;
+	/**
+	 * Number of properties which has been "finshed".
+	 */
 	public static var numFinishedProperties(get, null):Int;
 	
+	/**
+	 * Number of registered achievements
+	 */
 	public static var numAchievements(default, null):Int;
+	/**
+	 * Number of unlocked achievements
+	 */
 	public static var numUnlockedAchievements(get, null):Int;
+	/**
+	 * Number of still locked achievements
+	 */
 	public static var numLockedAchievements(get, null):Int;
 	
 	/**
-	 * Property name -> Property value -> Property progress -> Property range -> Void
+	 * Callback method which is called when property changes its value and not finished.
+	 * It should take following arguments: propery name and value delta (how much property changed)
 	 */
 	public static var onPropertyProgress		:String->Int->Void;
 	/**
-	 * Achievement name -> Achievement value delta -> Void
+	 * Callback method which is called when achievement is locked and you progress to unlocking it.
+	 * It should take following arguments: achievement name and progress delta
 	 */
 	public static var onAchievementProgress		:String->Int->Void;
 	
+	/**
+	 * Callback method which is called when property "finishes". Called only once (until property reset).
+	 * It takes propery name as an argument.
+	 */
 	public static var onPropertyFull			:String->Void;
 	
+	/**
+	 * Callback method which is called on achievement unlock event. Called only once (until achievement reset).
+	 * It takes achievement name as an argument.
+	 */
 	public static var onAchievementUnlock		:String->Void;
 	
+	/**
+	 * Dictionary for all registered properties
+	 */
 	private static var mProps 					:StringMap<Property> = new StringMap<Property>();
+	/**
+	 * Dictionary for all registered achievements
+	 */
 	private static var mAchievements 			:StringMap<Achievement> = new StringMap<Achievement>();
 	
 	/**
-	 * Helper array for achievement management
+	 * Create new property, which you can use later for tracking values related to achievements.
+	 * @param	theName					the name of the property. You can have access to property by its name later.
+	 * @param	theInitialValue			start value for property
+	 * @param	theaActivationMode		property "finish" mode. There are two modes: ACTIVE_IF_GREATER_THAN means that property "finished" then its value is >= to the activation value, and ACTIVE_IF_LESS_THAN means that property "finished" then its value is <= to the activation value
+	 * @param	theaActivationValue		value then property "finishes"
+	 * @param	theTags					and array of property's tags.
+	 * @return	Added property.
 	 */
-	private static var mAchievementsArray		:Array<Achievement> = [];
-	
-	public static function registerProperty(theName:String, theInitialValue:Int, theaActivationMode:PROPERTY_ACTIVATION, theValue:Int, ?theTags:Array<String>):Property
+	public static function registerProperty(theName:String, theInitialValue:Int = 0, theaActivationMode:PROPERTY_ACTIVATION = PROPERTY_ACTIVATION.ACTIVE_IF_GREATER_THAN, theaActivationValue:Int = 100, ?theTags:Array<String>):Property
 	{
 		if (containsProperty(theName))
 		{
 			throw ("Property \"" + theName + "\" is already registered.");
 		}
 		
-		mProps.set(theName, new Property(theName, theInitialValue, theaActivationMode, theValue, theTags));
+		mProps.set(theName, new Property(theName, theInitialValue, theaActivationMode, theaActivationValue, theTags));
 		numProperties++;
 		return mProps.get(theName);
 	}
 	
+	/**
+	 * Removes property from the achievement system
+	 * @param	theName		the name of the property
+	 * @return	Removed property.
+	 */
 	public static function unregisterProperty(theName:String):Property
 	{
 		if (containsProperty(theName))
@@ -84,6 +125,12 @@ class Achieve
 		return null;
 	}
 	
+	/**
+	 * Adds new achievement to the manager.
+	 * @param	theName				the name of achievement
+	 * @param	theRelatedProps		an array or related properties names.
+	 * @return	Added achievement.
+	 */
 	public static function registerAchievement(theName:String, theRelatedProps:Array<String>):Achievement
 	{
 		if (checkAchievementExists(theName))
@@ -102,6 +149,11 @@ class Achieve
 		return mAchievements.get(theName);
 	}
 	
+	/**
+	 * Removes achievement from the manager.
+	 * @param	theName		the name of achievement to remove
+	 * @return	Removed achievement
+	 */
 	public static function unregisterAchievement(theName:String):Achievement
 	{
 		if (checkAchievementExists(theName))
@@ -115,17 +167,32 @@ class Achieve
 		return null;
 	}
 	
+	/**
+	 * Returns the value of specified property
+	 * @param	theProp		property's name
+	 * @return	Value of the property
+	 */
 	public static function getProperty(theProp:String):Int 
 	{
 		checkPropertyExist(theProp);
 		return mProps.get(theProp).value;
 	}
 	
+	/**
+	 * Adds specified number to the property's values.
+	 * @param	theProp		property's name
+	 * @param	theValue	value to add to property
+	 */
 	public static function addToProperty(theProp:String, theValue:Int):Void
 	{
 		setProperty(theProp, getProperty(theProp) + theValue);
 	}
 	
+	/**
+	 * Adds number to specified properties
+	 * @param	theProps	an array of properties names to modify.
+	 * @param	theValue	value to add to properties
+	 */
 	public static function addToProperties(theProps:Array<String>, theValue:Int):Void
 	{
 		var numProps:Int = theProps.length;
@@ -135,11 +202,21 @@ class Achieve
 		}
 	}
 	
+	/**
+	 * Sets property's values to specified number
+	 * @param	theProp		property's name
+	 * @param	theValue	value to set
+	 */
 	public static function setProperty(theProp:String, theValue:Int, theIgnoreActivationContraint:Bool = false):Void
 	{
 		doSetValue(theProp, theValue, theIgnoreActivationContraint);
 	}
 	
+	/**
+	 * Sets properties value to specified number.
+	 * @param	theProps	an array of properties names to modify.
+	 * @param	theValue	value to set
+	 */
 	public static function setProperties(theProps:Array<String>, theValue:Int, theIgnoreActivationContraint:Bool = false):Void
 	{
 		var numProps:Int = theProps.length;
@@ -150,6 +227,11 @@ class Achieve
 		}
 	}
 	
+	/**
+	 * Gets the property with specified name
+	 * @param	theProp		property name
+	 * @return	property with specified name (if registered in manager).
+	 */
 	public static function property(theProp:String):Property
 	{
 		checkPropertyExist(theProp);
@@ -173,6 +255,10 @@ class Achieve
 		prop.value = theValue;
 	}
 	
+	/**
+	 * Resets properties to initial value.
+	 * @param	theTags		an optional array of tags. If specified then only properties with these tags will be reset.
+	 */
 	public static function resetProperties(?theTags:Array<String>):Void
 	{
 		for (prop in mProps)
@@ -184,6 +270,9 @@ class Achieve
 		}
 	}
 	
+	/**
+	 * Resets all properties and achievements (they become locked again).
+	 */
 	public static function reset():Void
 	{
 		resetProperties();
@@ -194,6 +283,11 @@ class Achieve
 		}
 	}
 	
+	/**
+	 * Checks if the property is registered in manager.
+	 * @param	theName		the to search for.
+	 * @return	true if property is in manager, false otherwise.
+	 */
 	public static function containsProperty(theName:String):Bool
 	{
 		return mProps.exists(theName);
@@ -207,11 +301,21 @@ class Achieve
 		}
 	}
 	
+	/**
+	 * Checks if the achievement is registered in manager.
+	 * @param	theName		the to search for.
+	 * @return	true if achievement is in manager, false otherwise.
+	 */
 	public static function checkAchievementExists(theName:String):Bool
 	{
 		return mAchievements.exists(theName);
 	}
 	
+	/**
+	 * Searches for all unlocked achievements in manager.
+	 * @param	achievements	an optional array to fill with found achievements.
+	 * @return	an array of unlocked achievements.
+	 */
 	public static function getAllUnlockedAchievements(?achievements:Array<Achievement>):Array<Achievement>
 	{
 		for (achievement in mAchievements) 
@@ -226,6 +330,11 @@ class Achieve
 		return achievements;
 	}
 	
+	/**
+	 * Returns an array of all achievements in manager.
+	 * @param	achievements	an optional array to fill with found achievements.
+	 * @return	an array of all achievements (both locked and unlocked).
+	 */
 	public static function getAllAchievements(?achievements:Array<Achievement>):Array<Achievement>
 	{
 		achievements = (achievements != null) ? achievements : new Array<Achievement>();
@@ -238,6 +347,11 @@ class Achieve
 		return achievements;
 	}
 	
+	/**
+	 * Checks if achievement with specified name is unlocked.
+	 * @param	theName		the name of achievement
+	 * @return	true if achievement is unlocked, false if not.
+	 */
 	public static function achievementUnlocked(theName:String):Bool
 	{
 		if (checkAchievementExists(theName))
@@ -249,6 +363,11 @@ class Achieve
 		return false;
 	}
 	
+	/**
+	 * Returns achievement with specified name (if it's registered in manager).
+	 * @param	theName		the name of achievement to search for.
+	 * @return	achievement with specified name.
+	 */
 	public static function achievement(theName:String):Achievement
 	{
 		if (checkAchievementExists(theName))
@@ -260,6 +379,12 @@ class Achieve
 		return null;
 	}
 	
+	/**
+	 * Returns all achievements which have at least one of specified properties.
+	 * @param	theProps		an array of property names.
+	 * @param	achievements	optional array to fill with found achievements. If null, then new array will be created.
+	 * @return	array of achievements with specified properties.
+	 */
 	public static function getAchievementsWith(theProps:Array<String>, ?achievements:Array<Achievement>):Array<Achievement>
 	{
 		achievements = (achievements != null) ? achievements : new Array<Achievement>();
@@ -275,6 +400,12 @@ class Achieve
 		return achievements;
 	}
 	
+	/**
+	 * Returns all achievements which have at least one property with specified tags.
+	 * @param	theProps		an array of tags.
+	 * @param	achievements	optional array to fill with found achievements. If null, then new array will be created.
+	 * @return	array of achievements with specified tags.
+	 */
 	public static function getAchievementsBy(?theTags:Array<String>, ?achievements:Array<Achievement>):Array<Achievement>
 	{
 		achievements = (achievements != null) ? achievements : new Array<Achievement>();
@@ -291,6 +422,9 @@ class Achieve
 		return getAchievementsWith(propNames, achievements);
 	}
 	
+	/**
+	 * Converts all registered properties to string.
+	 */
 	public static function dumpProperties():String
 	{
 		var aRet:String = "";

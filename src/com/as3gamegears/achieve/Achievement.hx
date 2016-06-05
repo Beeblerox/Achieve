@@ -17,18 +17,47 @@
  */
 package com.as3gamegears.achieve;
 
+/**
+ * Simple achievement class.
+ */
 class Achievement 
 {
+	/**
+	 * The name f achievement.
+	 */
 	public var name(default, null):String;
-	public var props(default, null):Array<String>;	
+	/**
+	 * An array of related properties.
+	 */
+	public var props(default, null):Array<String>;
+	/**
+	 * Whether achievement is unlocked.
+	 */
 	public var unlocked(default, null):Bool = false;
+	/**
+	 * Progress to achievement unlock. From 0 to 1.
+	 */
 	public var progress(default, null):Float = 0;
+	/**
+	 * The sum of related properties ranges.
+	 */
 	public var range(default, null):Int = 0;
+	/**
+	 * The sum of related properties absolute progress.
+	 */
 	public var absProgress(default, null):Int = 0;
-	
+	/**
+	 * User data. Can hold anything.
+	 */
 	public var data:Dynamic;
 	
-	public function new(theId:String, theRelatedProps:Array<String>)
+	/**
+	 * Achievement constructor
+	 * @param	theId				achievement name
+	 * @param	theRelatedProps		an array of names of related properties.
+	 */
+	@:allow(com.as3gamegears.achieve.Achieve)
+	private function new(theId:String, theRelatedProps:Array<String>)
 	{
 		name = theId;
 		props = theRelatedProps;
@@ -56,6 +85,9 @@ class Achievement
 		progress = rangeMultProgress / range;
 	}
 	
+	/**
+	 * Resets achievement. Basically sets unlocked to false again.
+	 */
 	public function reset():Void
 	{
 		unlocked = false;
@@ -70,11 +102,21 @@ class Achievement
 		}
 	}
 	
+	/**
+	 * Tells whether this achievement has property with specified name.
+	 * @param	theName		the name of property to search.
+	 * @return	true if achievement has property, false if not.
+	 */
 	public function hasProperty(theName:String):Bool
 	{
 		return (props.indexOf(theName) != -1);
 	}
 	
+	/**
+	 * Tells whether this achievement has any of properties with specified names.
+	 * @param	theName		an array of properties name to search.
+	 * @return	true if achievement has any of the properties, false if not.
+	 */
 	public function hasAnyProperty(theNames:Array<String>):Bool
 	{
 		for (propName in theNames)
@@ -88,6 +130,11 @@ class Achievement
 		return false;
 	}
 	
+	/**
+	 * Tells whether this achievement has all of properties with specified names.
+	 * @param	theName		an array of properties name to search.
+	 * @return	true if achievement has all of the properties, false if not.
+	 */
 	public function hasAllProperties(theNames:Array<String>):Bool
 	{
 		for (propName in theNames)
