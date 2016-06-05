@@ -32,7 +32,7 @@ class Property
 	public var finished(default, null):Bool = false;
 	public var progress(get, null):Float;
 	public var absProgress(get, null):Int;
-	public var range(get, null):Int;
+	public var range(default, null):Int;
 	
 	public var data:Dynamic;
 	
@@ -49,12 +49,16 @@ class Property
 		activation 			= theActivation;
 		mActivationValue 	= theActivationValue;
 		mInitialValue 		= theInitialValue;
+		
+		range = Std.int(Math.abs(mActivationValue - mInitialValue));
+		
 		reset();
 	}
 	
 	public function reset():Void 
 	{
 		mValue = mInitialValue;
+		finished = false;
 	}
 	
 	public function hasTag(theTag:String):Bool
@@ -126,11 +130,6 @@ class Property
 		var abs:Float = Math.abs(mValue - mInitialValue);
 		abs = Math.min(range, absProgress);
 		return Std.int(abs);
-	}
-	
-	private function get_range():Int
-	{
-		return Std.int(Math.abs(mActivationValue - mInitialValue));
 	}
 	
 	private function get_value():Int
