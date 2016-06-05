@@ -7,37 +7,41 @@ Properties can also be tagged and updated/reset in batch, which is useful for im
 ## Usage
 
 ```
-var a :Achieve = new Achieve();
+function initGame() :Void {
+  Achieve.registerProperty("killedEnemies", 0, PROPERTY_ACTIVATION.ACTIVE_IF_GREATER_THAN, 10, "levelStuff");
+  Achieve.registerProperty("lives", 3, PROPERTY_ACTIVATION.ACTIVE_IF_EQUALS_TO, 3, "levelStuff");
+  Achieve.registerProperty("completedLevels", 0, PROPERTY_ACTIVATION.ACTIVE_IF_GREATER_THAN, 5);
+  Achieve.registerProperty("deaths", 0, PROPERTY_ACTIVATION.ACTIVE_IF_EQUALS_TO, 0);
 
-function initGame() :void {
-  a.defineProperty("killedEnemies", 0, Achieve.ACTIVE_IF_GREATER_THAN, 10, "levelStuff");
-  a.defineProperty("lives", 3, Achieve.ACTIVE_IF_EQUALS_TO, 3, "levelStuff");
-  a.defineProperty("completedLevels", 0, Achieve.ACTIVE_IF_GREATER_THAN, 5);
-  a.defineProperty("deaths", 0, Achieve.ACTIVE_IF_EQUALS_TO, 0);
-
-  a.defineAchievement("masterKill", ["killedEnemies"]); // Kill 10+ enemies.
-  a.defineAchievement("cantTouchThis", ["lives"]); // Complete a level and don't die.
-  a.defineAchievement("nothingElse", ["completedLevels"]); // Beat all 5 levels.
-  a.defineAchievement("hero", ["completedLevels", "deaths"]); // Beat all 5 levels, do not die during the process
+  Achieve.registerAchievement("masterKill", ["killedEnemies"]); // Kill 10+ enemies.
+  Achieve.registerAchievement("cantTouchThis", ["lives"]); // Complete a level and don't die.
+  Achieve.registerAchievement("nothingElse", ["completedLevels"]); // Beat all 5 levels.
+  Achieve.registerAchievement("hero", ["completedLevels", "deaths"]); // Beat all 5 levels, do not die during the process
+  
+  Achieve.onAchievementUnlock = onAchievementUnlock;
 }
 
-function gameLoop() :void {
+function gameLoop() :Void {
   if(enemyWasKilled()) {
-    a.addValue(["killedEnemies"], 1);
+    Achieve.addToProperties(["killedEnemies"], 1);
   }
 
   if(playerJustDied()) {
-    a.addValue(["lives"], -1);
-    a.addValue(["deaths"], 1);
+    Achieve.addToProperty("lives", -1);
+    Achieve.addToProperties(["deaths"], 1);
   }
 }
 
-function levelUp() :void {
-  a.addValue(["completedLevels"], 1);
+function levelUp() :Void {
+  Achieve.addToProperty("completedLevels", 1);
 
-  a.checkAchievements();
   // Reset all properties tagged with 'levelStuff'
-  a.resetProperties("levelStuff");
+  Achieve.resetProperties("levelStuff");
+}
+
+function onAchievementUnlock(achievementName:String) :Void {
+  // Handle achievement unlock here...
+  ...
 }
 ```
 
